@@ -12,13 +12,24 @@ pub struct User {
 }
 
 #[tauri::command]
-pub async fn get_all_users_for_server() -> Result<Vec<User>, String> {
+pub async fn get_all_users_for_server(
+    auth_state: State<'_, AuthState>
+) -> Result<Vec<User>, String> {
     let client = reqwest::Client::new();
+
+    let token = auth_state.token.lock().await.clone()
+        .ok_or("No token found")?;
+
     let response = client
         .get("http://localhost:8080/users/get_all_users")
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .map_err(|e| e.to_string())?;
+
+    if !response.status().is_success() {
+        return Err(format!("Request failed with status: {}", response.status()));
+    }
 
     let users: Vec<User> = response
         .json()

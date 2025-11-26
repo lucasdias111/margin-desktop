@@ -19,7 +19,7 @@ pub async fn send_message_to_user(
     sender: tauri::State<'_, WsSender>,
 ) -> Result<String, String> {
     let message = WebSocketMessage {
-        message_type: "SEND_MESSAGE".to_string(),
+        message_type: "SEND_DIRECT_MESSAGE".to_string(),
         to_user_id,
         message: message_text,
     };
