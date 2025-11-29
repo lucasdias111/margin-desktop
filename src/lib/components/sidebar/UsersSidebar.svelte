@@ -16,7 +16,7 @@
 
   onMount(() => {
     getAllUsersForServer().then((fetchedUsers) => {
-      users = fetchedUsers.filter((u) => u.id !== $currentUser?.id);
+      users = fetchedUsers;
     });
   });
 

@@ -48,6 +48,8 @@
     });
 
     export async function selectUser(user: User) {
+        if (selectedUser && selectedUser.id === user.id) return;
+
         selectedUser = user;
         await loadMessagesForUser(user.id);
     }
@@ -58,7 +60,6 @@
         }
 
         try {
-
             messages = await invoke<ChatMessage[]>("get_message_history_for_user", {
                 fromUserId: $currentUser.id,
                 toUserId: userId
@@ -67,7 +68,6 @@
             console.error("Failed to load messages:", error);
         }
     }
-
 
     function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
@@ -83,8 +83,10 @@
                 messageText: messageText,
             });
 
+            if (!$currentUser) return;
+
             const newMessage: ChatMessage = {
-                id: null, // Will be set by backend
+                id: null,
                 fromUserId: $currentUser.id,
                 toUserId: toUserId,
                 message: messageText,
@@ -140,18 +142,30 @@
         padding: 20px;
         overflow-y: auto;
         scroll-behavior: smooth;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
+
     .message {
-        padding: 10px;
-        margin-bottom: 10px;
-        background-color: #2a2a2a;
-        border-radius: 4px;
+        padding: 12px 16px;
+        border-radius: 18px;
+        max-width: 70%;
+        word-wrap: break-word;
+        width: fit-content;
+    }
+
+    .message:not(.sent) {
+        background-color: #b47024;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
     }
 
     .message.sent {
-        background-color: #1e5a8e;
-        margin-left: auto;
-        max-width: 70%;
+        background-color: #69685f;
+        color: #e5e5e5;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
     }
 
     .input-area {
