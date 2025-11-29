@@ -21,7 +21,7 @@
         password: password,
       });
       loginResponse = result;
-      goto('/home'); // Navigate to home
+      goto('/home');
       return true;
     } catch (error: any) {
       loginResponse = String(error);

@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type {User} from "$lib/models/User";
-  import {onMount} from "svelte";
-  import {invoke} from "@tauri-apps/api/core";
-  import {listen} from "@tauri-apps/api/event";
-  import {currentUser} from "$lib/stores/userStores";
+  import type { User } from "$lib/models/User";
+  import { onMount } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
+  import { currentUser } from "$lib/stores/userStores";
+  import ServerSelection from "./ServerSelection.svelte";
+  import Navigation from "./Navigation.svelte";
 
   interface Props {
     onUserSelected: (user: User) => void;
@@ -14,7 +16,7 @@
 
   onMount(() => {
     getAllUsersForServer().then((fetchedUsers) => {
-      users = fetchedUsers.filter(u => u.id !== $currentUser?.id);
+      users = fetchedUsers.filter((u) => u.id !== $currentUser?.id);
     });
   });
 
@@ -32,12 +34,18 @@
   });
 
   listen<User>("ws_logout", (event) => {
-    users = users.filter(user => user.id !== event.payload.id);
+    users = users.filter((user) => user.id !== event.payload.id);
   });
-
 </script>
 
 <div class="sidebar">
+  <ServerSelection />
+  <hr />
+
+  <Navigation />
+
+  <hr />
+
   <h3>Users</h3>
   <ul>
     {#each users as user}
@@ -68,15 +76,15 @@
   }
 
   .sidebar button {
-  width: 100%;
-  padding: 10px;
-  background-color: transparent;
-  border: none;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-}
+    width: 100%;
+    padding: 10px;
+    background-color: transparent;
+    border: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+  }
 
   .sidebar li {
     padding: 10px;
