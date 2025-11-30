@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { User } from "$lib/models/User";
+  import type { User } from "$lib/models/user";
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";

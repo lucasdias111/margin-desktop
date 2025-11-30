@@ -3,7 +3,7 @@
     import {listen} from "@tauri-apps/api/event";
     import {currentUser} from "$lib/stores/userStores";
     import {onMount, tick} from "svelte";
-    import type {User} from "$lib/models/User";
+    import type {User} from "$lib/models/user";
 
     interface ChatMessage {
         id: number | null;
