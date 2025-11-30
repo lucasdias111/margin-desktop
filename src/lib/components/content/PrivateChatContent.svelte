@@ -1,28 +1,14 @@
 <script lang="ts">
     import {invoke} from "@tauri-apps/api/core";
-    import {listen} from "@tauri-apps/api/event";
-    import {currentUser} from "$lib/stores/userStores";
     import {onMount, tick} from "svelte";
-    import type {User} from "$lib/models/user";
-
-    interface ChatMessage {
-        id: number | null;
-        fromUserId: number;
-        toUserId: number;
-        message: string;
-        isRead: boolean;
-        isEdited: boolean;
-        createdAt: string | null;
-    }
-
-    interface Props {
-        messageInput: string;
-        onMessageInputChange: (value: string) => void;
-    }
+    import {listen} from "@tauri-apps/api/event";
+    import type {User} from "$lib/models/user.ts";
+    import type {DirectMessage} from "$lib/models/directMessage.ts";
+    import {currentUser} from "$lib/stores/userStores";
 
     let selectedUser = $state<User | null>(null);
-    let messages = $state<ChatMessage[]>([]);
-    let {messageInput, onMessageInputChange}: Props = $props();
+    let messages = $state<DirectMessage[]>([]);
+    let messageInput = $state("");
     let messagesContainer: HTMLDivElement;
 
     $effect(() => {
@@ -35,8 +21,8 @@
     });
 
     onMount(() => {
-        const unlisten = listen<ChatMessage>("ws_message_received", (event) => {
-            let incomingMsg: ChatMessage = event.payload;
+        const unlisten = listen<DirectMessage>("ws_message_received", (event) => {
+            let incomingMsg: DirectMessage = event.payload;
             if (selectedUser && incomingMsg.fromUserId === selectedUser.id) {
                 messages = [...messages, incomingMsg];
             }
@@ -47,32 +33,11 @@
         };
     });
 
-    export async function selectUser(user: User) {
-        if (selectedUser && selectedUser.id === user.id) return;
-
-        selectedUser = user;
-        await loadMessagesForUser(user.id);
-    }
-
-    async function loadMessagesForUser(userId: number) {
-        if (!$currentUser) {
-            throw new Error("No user logged in");
-        }
-
-        try {
-            messages = await invoke<ChatMessage[]>("get_message_history_for_user", {
-                fromUserId: $currentUser.id,
-                toUserId: userId
-            });
-        } catch (error) {
-            console.error("Failed to load messages:", error);
-        }
-    }
-
     function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         if (selectedUser && messageInput.trim()) {
             sendMessage(selectedUser.id, messageInput);
+            messageInput = ""; // Clear directly
         }
     }
 
@@ -85,7 +50,7 @@
 
             if (!$currentUser) return;
 
-            const newMessage: ChatMessage = {
+            const newMessage: DirectMessage = {
                 id: null,
                 fromUserId: $currentUser.id,
                 toUserId: toUserId,
@@ -96,14 +61,31 @@
             };
 
             messages = [...messages, newMessage];
-
-            onMessageInputChange("");
         } catch (error) {
             console.error("Failed to send message:", error);
         }
     }
-</script>
 
+
+    export async function loadMessagesForUser(user: User) {
+        if (selectedUser && selectedUser.id === user.id) return;
+
+        selectedUser = user;
+
+        if (!$currentUser) {
+            throw new Error("No user logged in");
+        }
+
+        try {
+            messages = await invoke<DirectMessage[]>("get_message_history_for_user", {
+                fromUserId: $currentUser.id,
+                toUserId: user.id
+            });
+        } catch (error) {
+            console.error("Failed to load messages:", error);
+        }
+    }
+</script>
 <div class="chat">
     {#if selectedUser}
         <h1>{selectedUser.username}</h1>
@@ -121,15 +103,13 @@
 
     <form class="input-area" onsubmit={handleSubmit}>
         <input
-                value={messageInput}
-                oninput={(e) => onMessageInputChange(e.currentTarget.value)}
+                bind:value={messageInput}
                 placeholder="Type a message..."
                 disabled={!selectedUser}
         />
         <button type="submit" disabled={!selectedUser}>Send</button>
     </form>
 </div>
-
 <style>
     .chat {
         flex: 1;

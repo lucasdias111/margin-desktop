@@ -2,13 +2,13 @@
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
   import Sidebar from "$lib/components/sidebar/UsersSidebar.svelte";
-  import ChatWindow from "$lib/components/ChatWindow.svelte";
+  import ContentWindow from "$lib/components/content/ContentWindow.svelte";
   import Header from "$lib/components/MainHeader.svelte";
   import type {User} from "$lib/models/user";
   import { currentUser } from '$lib/stores/userStores';
 
   let messageInput = $state("");
-  let chatArea: ChatWindow;
+  let content: ContentWindow;
 
   onMount(() => {
     getCurrentUser();
@@ -40,7 +40,7 @@
   }
 
   function handleUserSelected(user: User) {
-    chatArea?.selectUser(user);
+    content?.selectUser(user);
   }
 </script>
 
@@ -48,7 +48,7 @@
   <Header />
   <div class="content">
     <Sidebar onUserSelected={handleUserSelected} />
-    <ChatWindow bind:this={chatArea} {messageInput} onMessageInputChange={(value) => (messageInput = value)}/>
+    <ContentWindow bind:this={content}/>
   </div>
 </div>
 
