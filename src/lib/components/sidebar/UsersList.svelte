@@ -1,4 +1,9 @@
 <script lang="ts">
+    import type { User } from "$lib/models/user";
+    import { invoke } from "@tauri-apps/api/core";
+    import { listen } from "@tauri-apps/api/event";
+    import { onMount } from "svelte";
+
       interface Props {
     onUserSelected: (user: User) => void;
   }
