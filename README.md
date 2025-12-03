@@ -1,3 +1,3 @@
-# agora Desktop client
+# margin Desktop client
 
-This is the repository for the agora desktop client
+This is the repository for the margin desktop client

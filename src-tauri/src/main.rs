@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    the_agora_client_lib::run()
+    margin_client_lib::run()
 }

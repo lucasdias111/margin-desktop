@@ -6,7 +6,7 @@
         <label for="server-list">Choose a server:</label>
 
         <select name="servers" id="server-list">
-            <option value="agora">agora</option>
+            <option value="margin">margin</option>
         </select>
     </div>
       <hr />
