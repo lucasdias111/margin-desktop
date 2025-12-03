@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
-  import Sidebar from "$lib/components/sidebar/UsersSidebar.svelte";
+  import Sidebar from "$lib/components/sidebar/Sidebar.svelte";
   import ContentWindow from "$lib/components/content/ContentWindow.svelte";
   import Header from "$lib/components/MainHeader.svelte";
   import type {User} from "$lib/models/user";

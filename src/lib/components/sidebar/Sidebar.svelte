@@ -1,59 +1,20 @@
 <script lang="ts">
   import type { User } from "$lib/models/user";
-  import { onMount } from "svelte";
-  import { invoke } from "@tauri-apps/api/core";
-  import { listen } from "@tauri-apps/api/event";
-  import { currentUser } from "$lib/stores/userStores";
   import ServerSelection from "./ServerSelection.svelte";
   import Navigation from "./Navigation.svelte";
+  import UsersList from "./UsersList.svelte";
 
   interface Props {
     onUserSelected: (user: User) => void;
   }
 
   let { onUserSelected }: Props = $props();
-  let users = $state<User[]>([]);
-
-  onMount(() => {
-    getAllUsersForServer().then((fetchedUsers) => {
-      users = fetchedUsers;
-    });
-  });
-
-  async function getAllUsersForServer(): Promise<User[]> {
-    try {
-      return await invoke("get_all_users_for_server");
-    } catch (error) {
-      console.log("Error getting users");
-      return [];
-    }
-  }
-
-  listen<User>("ws_login", (event) => {
-    users = [...users, event.payload];
-  });
-
-  listen<User>("ws_logout", (event) => {
-    users = users.filter((user) => user.id !== event.payload.id);
-  });
 </script>
 
 <div class="sidebar">
   <ServerSelection />
-  <hr />
-
-  <Navigation />
-
-  <hr />
-
-  <h3>Users</h3>
-  <ul>
-    {#each users as user}
-      <li>
-        <button onclick={() => onUserSelected(user)}>{user.username}</button>
-      </li>
-    {/each}
-  </ul>
+  <Navigation onContentSelected={(c) => console.log("Selected " + c)} />
+  <UsersList {onUserSelected} />
 </div>
 
 <style>
