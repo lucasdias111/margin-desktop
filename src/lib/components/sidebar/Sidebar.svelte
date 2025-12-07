@@ -4,17 +4,12 @@
   import Navigation from "./Navigation.svelte";
   import UsersList from "./UsersList.svelte";
 
-  interface Props {
-    onUserSelected: (user: User) => void;
-  }
-
-  let { onUserSelected }: Props = $props();
 </script>
 
 <div class="sidebar">
   <ServerSelection />
   <Navigation onContentSelected={(c) => console.log("Selected " + c)} />
-  <UsersList {onUserSelected} />
+  <UsersList/>
 </div>
 
 <style>

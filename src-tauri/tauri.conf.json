@@ -9,18 +9,27 @@
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../build"
   },
-  "app": {
-    "windows": [
-      {
-        "title": "margin-desktop",
-        "width": 800,
-        "height": 600
-      }
-    ],
+"app": {
+  "windows": [
+    {
+      "label": "main",
+      "title": "margin-desktop",
+      "width": 800,
+      "height": 600,
+      "url": "http://localhost:1420"
+    },
+    {
+      "label": "secondary",
+      "title": "Secondary Window",
+      "width": 600,
+      "height": 400,
+      "url": "http://localhost:1420"
+    }
+  ],
     "security": {
       "csp": null
     }
-  },
+},
   "bundle": {
     "active": true,
     "targets": "all",

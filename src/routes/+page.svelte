@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
   import { goto } from '$app/navigation';
 
   let username = $state("");
@@ -16,17 +15,46 @@
 
   async function login(username: string, password: string) {
     try {
-      const result: string = await invoke("login", {
-        username: username,
-        password: password,
+      const response = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
       });
-      loginResponse = result;
+
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+
+      const authResponse = await response.json();
+
+      if (!authResponse.token) {
+        throw new Error("No token in response");
+      }
+
+      sessionStorage.setItem('authToken', authResponse.token);
+
+      loginResponse = "Login successful";
+      console.log("Logged in");
+
       goto('/home');
       return true;
     } catch (error: any) {
-      loginResponse = String(error);
+      loginResponse = error.message || String(error);
       return false;
     }
+  }
+
+  function getStoredToken(): string | null {
+    return sessionStorage.getItem('authToken');
+  }
+
+  function clearToken() {
+    sessionStorage.removeItem('authToken');
   }
 </script>
 

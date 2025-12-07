@@ -1,12 +1,8 @@
 <script lang="ts">
-    import type {User} from "$lib/models/user";
     import PrivateChatContent from "$lib/components/content/PrivateChatContent.svelte";
 
     let privateChat: PrivateChatContent;
 
-    export async function selectUser(user: User) {
-        await privateChat?.loadMessagesForUser(user);
-    }
 </script>
 
 <div class="content">

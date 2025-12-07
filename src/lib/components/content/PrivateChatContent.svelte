@@ -1,10 +1,10 @@
 <script lang="ts">
-    import {invoke} from "@tauri-apps/api/core";
-    import {onMount, tick} from "svelte";
-    import {listen} from "@tauri-apps/api/event";
-    import type {User} from "$lib/models/user.ts";
-    import type {DirectMessage} from "$lib/models/directMessage.ts";
-    import {currentUser} from "$lib/stores/userStores";
+    import { onMount, onDestroy, tick } from "svelte";
+    import type { User } from "$lib/models/user.ts";
+    import type { DirectMessage } from "$lib/models/directMessage.ts";
+    import { currentUser } from "$lib/stores/userStores";
+    import { websocketService } from "$lib/services/websocketService";
+    import { chatState } from '$lib/services/chatState.svelte';
 
     let selectedUser = $state<User | null>(null);
     let messages = $state<DirectMessage[]>([]);
@@ -12,40 +12,57 @@
     let messagesContainer: HTMLDivElement;
 
     $effect(() => {
-        messages;
         tick().then(() => {
             if (messagesContainer) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         });
+
+        if (chatState.selectedUser) {
+            loadMessagesForUser(chatState.selectedUser);
+        }
     });
 
     onMount(() => {
-        const unlisten = listen<DirectMessage>("ws_message_received", (event) => {
-            let incomingMsg: DirectMessage = event.payload;
+        websocketService.on("SEND_MESSAGE", handleIncomingMessage);
+    });
+
+    onDestroy(() => {
+        websocketService.off("SEND_MESSAGE", handleIncomingMessage);
+    });
+
+    function handleIncomingMessage(data: any) {
+        try {
+            console.log("Incoming message data:", data);
+
+            const incomingMsg: DirectMessage = JSON.parse(data.payload);
+
             if (selectedUser && incomingMsg.fromUserId === selectedUser.id) {
                 messages = [...messages, incomingMsg];
+            } else {
+                console.log(
+                    "Message not added - sender doesn't match selected user",
+                );
             }
-        });
-
-        return () => {
-            unlisten.then(fn => fn());
-        };
-    });
+        } catch (error) {
+            console.error("Error handling incoming message:", error, data);
+        }
+    }
 
     function handleSubmit(event: SubmitEvent) {
         event.preventDefault();
         if (selectedUser && messageInput.trim()) {
             sendMessage(selectedUser.id, messageInput);
-            messageInput = ""; // Clear directly
+            messageInput = "";
         }
     }
 
     async function sendMessage(toUserId: number, messageText: string) {
         try {
-            await invoke("send_message_to_user", {
+            websocketService.send({
+                type: "SEND_DIRECT_MESSAGE",
                 toUserId: toUserId,
-                messageText: messageText,
+                message: messageText,
             });
 
             if (!$currentUser) return;
@@ -57,7 +74,7 @@
                 message: messageText,
                 isRead: false,
                 isEdited: false,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
             };
 
             messages = [...messages, newMessage];
@@ -65,7 +82,6 @@
             console.error("Failed to send message:", error);
         }
     }
-
 
     export async function loadMessagesForUser(user: User) {
         if (selectedUser && selectedUser.id === user.id) return;
@@ -77,15 +93,35 @@
         }
 
         try {
-            messages = await invoke<DirectMessage[]>("get_message_history_for_user", {
-                fromUserId: $currentUser.id,
-                toUserId: user.id
-            });
+            const token = sessionStorage.getItem("authToken");
+            if (!token) {
+                throw new Error("No auth token found");
+            }
+
+            const response = await fetch(
+                `http://localhost:8080/chat_messages/get_chat_history?userId=${$currentUser.id}&toUserId=${user.id}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `Request failed with status: ${response.status}`,
+                );
+            }
+
+            messages = await response.json();
         } catch (error) {
             console.error("Failed to load messages:", error);
         }
     }
 </script>
+
 <div class="chat">
     {#if selectedUser}
         <h1>{selectedUser.username}</h1>
@@ -95,7 +131,10 @@
 
     <div class="messages" bind:this={messagesContainer}>
         {#each messages as message}
-            <div class="message" class:sent={message.fromUserId === $currentUser?.id}>
+            <div
+                class="message"
+                class:sent={message.fromUserId === $currentUser?.id}
+            >
                 {message.message}
             </div>
         {/each}
@@ -103,13 +142,14 @@
 
     <form class="input-area" onsubmit={handleSubmit}>
         <input
-                bind:value={messageInput}
-                placeholder="Type a message..."
-                disabled={!selectedUser}
+            bind:value={messageInput}
+            placeholder="Type a message..."
+            disabled={!selectedUser}
         />
         <button type="submit" disabled={!selectedUser}>Send</button>
     </form>
 </div>
+
 <style>
     .chat {
         flex: 1;

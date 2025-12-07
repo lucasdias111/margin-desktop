@@ -1,38 +1,86 @@
 <script lang="ts">
     import type { User } from "$lib/models/user";
-    import { invoke } from "@tauri-apps/api/core";
-    import { listen } from "@tauri-apps/api/event";
-    import { onMount } from "svelte";
+    import { onMount, onDestroy } from "svelte";
+    import { websocketService } from '$lib/services/websocketService';
+    import { chatState } from '$lib/services/chatState.svelte';
 
-      interface Props {
-    onUserSelected: (user: User) => void;
-  }
+    let users = $state<User[]>([]);
 
-  let { onUserSelected }: Props = $props();
-  let users = $state<User[]>([]);
-
-  onMount(() => {
-    getAllUsersForServer().then((fetchedUsers) => {
-      users = fetchedUsers;
+    onMount(() => {
+        getAllUsersForServer().then((fetchedUsers) => {
+            users = fetchedUsers;
+        });
+        websocketService.on("USER_LOGIN", handleUserLogin);
+        websocketService.on("USER_LOGOUT", handleUserLogout);
     });
-  });
 
-  async function getAllUsersForServer(): Promise<User[]> {
-    try {
-      return await invoke("get_all_users_for_server");
-    } catch (error) {
-      console.log("Error getting users");
-      return [];
+    onDestroy(() => {
+        websocketService.off("USER_LOGIN", handleUserLogin);
+        websocketService.off("USER_LOGOUT", handleUserLogout);
+    });
+
+    function handleUserLogin(data: any) {
+        console.log("User login event:", data);
+        const newUser: User = JSON.parse(data.userJson);
+        if (!users.find(u => u.id === newUser.id)) {
+            users = [...users, newUser];
+        }
     }
-  }
 
-  listen<User>("ws_login", (event) => {
-    users = [...users, event.payload];
-  });
+    function handleUserLogout(data: any) {
+        console.log("User logout event:", data);
+        const loggedOutUser: User = JSON.parse(data.userJson);
+        users = users.filter(user => user.id !== loggedOutUser.id);
+    }
 
-  listen<User>("ws_logout", (event) => {
-    users = users.filter((user) => user.id !== event.payload.id);
-  });
+    async function getAllUsersForServer(): Promise<User[]> {
+        try {
+            const token = sessionStorage.getItem('authToken');
+            if (!token) {
+                console.error("No auth token found");
+                return [];
+            }
+            const response = await fetch("http://localhost:8080/users/get_all_users", {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`Request failed with status: ${response.status}`);
+            }
+            const users: User[] = await response.json();
+            return users;
+        } catch (error) {
+            console.error("Error getting users:", error);
+            return [];
+        }
+    }
+
+    export async function getCurrentUser(): Promise<User | null> {
+        try {
+            const token = sessionStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("No token found. Please login first.");
+            }
+            const response = await fetch("http://localhost:8080/users/me", {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`Request failed with status: ${response.status}`);
+            }
+            const user: User = await response.json();
+            return user;
+        } catch (error) {
+            console.error("Error getting current user:", error);
+            return null;
+        }
+    }
 </script>
 
 <div>
@@ -40,9 +88,9 @@
     <ul>
         {#each users as user}
             <li>
-                <button onclick={() => onUserSelected(user)}
-                    >{user.username}</button
-                >
+                <button onclick={() => chatState.selectUser(user)}>
+                    {user.username}
+                </button>
             </li>
         {/each}
     </ul>

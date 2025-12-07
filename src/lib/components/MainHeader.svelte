@@ -14,6 +14,7 @@
   
   .topbar h1 {
     margin: 0;
-    font-size: 24px;
-  }
+    font-size: 24px;  
+    text-align: end;
+    }
 </style>

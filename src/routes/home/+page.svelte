@@ -1,53 +1,58 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import { onMount } from "svelte";
-  import Sidebar from "$lib/components/sidebar/Sidebar.svelte";
-  import ContentWindow from "$lib/components/content/ContentWindow.svelte";
-  import Header from "$lib/components/MainHeader.svelte";
-  import type {User} from "$lib/models/user";
-  import { currentUser } from '$lib/stores/userStores';
+    import { onMount, onDestroy } from "svelte";
+    import Sidebar from "$lib/components/sidebar/Sidebar.svelte";
+    import ContentWindow from "$lib/components/content/ContentWindow.svelte";
+    import Header from "$lib/components/MainHeader.svelte";
+    import type {User} from "$lib/models/user";
+    import { currentUser } from '$lib/stores/userStores';
+    import { websocketService } from '$lib/services/websocketService';
 
-  let messageInput = $state("");
-  let content: ContentWindow;
+    let messageInput = $state("");
+    let content: ContentWindow;
 
-  onMount(() => {
-    getCurrentUser();
-    connectWebSocket();
-  });
+    onMount(() => {
+        getCurrentUser();
+        websocketService.connect();
+    });
 
-  async function getCurrentUser() {
-    try {
-      const user = await invoke<User>("get_current_user");
-      currentUser.set(user);
-    } catch (error) {
-      console.error("Error getting current user:", error);
+    onDestroy(() => {
+        websocketService.disconnect();
+    });
+
+    async function getCurrentUser() {
+        try {
+            const token = sessionStorage.getItem('authToken');
+            if (!token) {
+                console.error("No token found. Please login first.");
+                return;
+            }
+
+            const response = await fetch("http://localhost:8080/users/me", {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Request failed with status: ${response.status}`);
+            }
+
+            const user: User = await response.json();
+            currentUser.set(user);
+            console.log("Current user loaded:", user);
+        } catch (error) {
+            console.error("Error getting current user:", error);
+        }
     }
-  }
 
-  async function connectWebSocket() {
-    try {
-      const token = await invoke("get_stored_token");
-      if (!token) {
-        console.error("No token found. Please login first.");
-        return;
-      }
-      await invoke("connect_websocket", {
-        token: token,
-      });
-    } catch (error) {
-      console.error("WebSocket connection failed:", error);
-    }
-  }
-
-  function handleUserSelected(user: User) {
-    content?.selectUser(user);
-  }
 </script>
 
 <div class="app">
   <Header />
   <div class="content">
-    <Sidebar onUserSelected={handleUserSelected} />
+    <Sidebar/>
     <ContentWindow bind:this={content}/>
   </div>
 </div>

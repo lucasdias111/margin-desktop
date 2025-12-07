@@ -1,4 +1,4 @@
-interface DirectMessage {
+export interface DirectMessage {
     id: number | null;
     fromUserId: number;
     toUserId: number;
