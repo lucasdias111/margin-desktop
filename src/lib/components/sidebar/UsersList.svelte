@@ -1,8 +1,9 @@
 <script lang="ts">
     import type { User } from "$lib/models/user";
     import { onMount, onDestroy } from "svelte";
-    import { websocketService } from '$lib/services/websocketService';
-    import { chatState } from '$lib/services/chatState.svelte';
+    import { websocketService } from "$lib/services/websocketService";
+    import { chatState } from "$lib/services/chatState.svelte";
+    import { authenticatedFetch } from "$lib/services/api";
 
     let users = $state<User[]>([]);
 
@@ -22,7 +23,7 @@
     function handleUserLogin(data: any) {
         console.log("User login event:", data);
         const newUser: User = JSON.parse(data.userJson);
-        if (!users.find(u => u.id === newUser.id)) {
+        if (!users.find((u) => u.id === newUser.id)) {
             users = [...users, newUser];
         }
     }
@@ -30,25 +31,25 @@
     function handleUserLogout(data: any) {
         console.log("User logout event:", data);
         const loggedOutUser: User = JSON.parse(data.userJson);
-        users = users.filter(user => user.id !== loggedOutUser.id);
+        users = users.filter((user) => user.id !== loggedOutUser.id);
     }
 
     async function getAllUsersForServer(): Promise<User[]> {
         try {
-            const token = sessionStorage.getItem('authToken');
-            if (!token) {
-                console.error("No auth token found");
-                return [];
-            }
-            const response = await fetch("http://localhost:8080/users/get_all_users", {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await authenticatedFetch(
+                `users/get_all_users`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+
             if (!response.ok) {
-                throw new Error(`Request failed with status: ${response.status}`);
+                throw new Error(
+                    `Request failed with status: ${response.status}`,
+                );
             }
             const users: User[] = await response.json();
             return users;
@@ -60,19 +61,20 @@
 
     export async function getCurrentUser(): Promise<User | null> {
         try {
-            const token = sessionStorage.getItem('authToken');
-            if (!token) {
-                throw new Error("No token found. Please login first.");
-            }
-            const response = await fetch("http://localhost:8080/users/me", {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await authenticatedFetch(
+                `users/me`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+
             if (!response.ok) {
-                throw new Error(`Request failed with status: ${response.status}`);
+                throw new Error(
+                    `Request failed with status: ${response.status}`,
+                );
             }
             const user: User = await response.json();
             return user;

@@ -4,7 +4,8 @@
     import type { DirectMessage } from "$lib/models/directMessage.ts";
     import { currentUser } from "$lib/stores/userStores";
     import { websocketService } from "$lib/services/websocketService";
-    import { chatState } from '$lib/services/chatState.svelte';
+    import { chatState } from "$lib/services/chatState.svelte";
+    import { authenticatedFetch } from "$lib/services/api";
 
     let selectedUser = $state<User | null>(null);
     let messages = $state<DirectMessage[]>([]);
@@ -93,17 +94,11 @@
         }
 
         try {
-            const token = sessionStorage.getItem("authToken");
-            if (!token) {
-                throw new Error("No auth token found");
-            }
-
-            const response = await fetch(
-                `http://localhost:8080/chat_messages/get_chat_history?userId=${$currentUser.id}&toUserId=${user.id}`,
+            const response = await authenticatedFetch(
+                `chat_messages/get_chat_history?userId=${$currentUser.id}&toUserId=${user.id}`,
                 {
                     method: "GET",
                     headers: {
-                        Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
                 },

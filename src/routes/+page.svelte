@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { goto } from "$app/navigation";
+    import { authenticatedFetch, loginFetch } from "$lib/services/api";
 
   let username = $state("");
   let password = $state("");
@@ -15,16 +16,7 @@
 
   async function login(username: string, password: string) {
     try {
-      const response = await fetch("http://localhost:8080/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
-      });
+      const response = await loginFetch(username, password);
 
       if (!response.ok) {
         throw new Error("Login failed");
@@ -36,12 +28,12 @@
         throw new Error("No token in response");
       }
 
-      sessionStorage.setItem('authToken', authResponse.token);
+      sessionStorage.setItem("authToken", authResponse.token);
 
       loginResponse = "Login successful";
       console.log("Logged in");
 
-      goto('/home');
+      goto("/home");
       return true;
     } catch (error: any) {
       loginResponse = error.message || String(error);
@@ -50,11 +42,11 @@
   }
 
   function getStoredToken(): string | null {
-    return sessionStorage.getItem('authToken');
+    return sessionStorage.getItem("authToken");
   }
 
   function clearToken() {
-    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem("authToken");
   }
 </script>
 
@@ -83,7 +75,8 @@
     justify-content: center;
   }
 
-  h1, p {
+  h1,
+  p {
     text-align: center;
   }
 </style>
